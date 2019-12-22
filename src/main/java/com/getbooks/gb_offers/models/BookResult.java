@@ -1,5 +1,6 @@
 package com.getbooks.gb_offers.models;
 
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,8 +11,14 @@ import lombok.Setter;
 @AllArgsConstructor
 @NoArgsConstructor
 public class BookResult {
-    String book_id;
-    String auction_id;
-    String imageUrl;
-    String priceAmount;
+    @JsonRawValue
+    private String auction_id;
+    @JsonRawValue
+    private String imageUrl;
+    @JsonRawValue
+    private String name;
+    @JsonRawValue
+    private String priceAmount;
+    @JsonRawValue
+    private String lowestPriceDelivery;
 }

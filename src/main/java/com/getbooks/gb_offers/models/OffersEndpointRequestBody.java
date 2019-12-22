@@ -9,8 +9,8 @@ import java.util.List;
 @Setter
 @Getter
 @AllArgsConstructor
-public class BookRequestBody {
+public class OffersEndpointRequestBody {
 
-    public List<Book> books;
+    public List<BookRequest> books;
     public String authorization;
 }
