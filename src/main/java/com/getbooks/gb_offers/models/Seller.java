@@ -18,7 +18,7 @@ public class Seller implements Serializable {
     public String seller_id;
 
     @JsonRawValue
-    private String lowestPriceDelivery;
+    private Double lowestPriceDelivery;
 
     @JsonRawValue
     private Double total;

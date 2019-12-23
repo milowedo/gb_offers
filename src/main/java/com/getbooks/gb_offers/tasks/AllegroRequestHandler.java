@@ -60,7 +60,7 @@ public final class AllegroRequestHandler {
 
             var price = singleBook.get("delivery")
                     .getAsJsonObject().get("lowestPrice")
-                    .getAsJsonObject().get("amount").toString();
+                    .getAsJsonObject().get("amount").getAsDouble();
             seller.setLowestPriceDelivery(price);
         } catch (Exception e) {
             e.printStackTrace();
