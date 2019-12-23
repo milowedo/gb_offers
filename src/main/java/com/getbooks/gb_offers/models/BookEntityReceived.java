@@ -6,7 +6,7 @@ import lombok.*;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class BookRequest {
+public class BookEntityReceived {
     public String _id;
     public String writer;
     public String title;

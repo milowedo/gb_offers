@@ -11,6 +11,6 @@ import java.util.List;
 @AllArgsConstructor
 public class OffersEndpointRequestBody {
 
-    public List<BookRequest> books;
+    public List<BookEntityReceived> books;
     public String authorization;
 }

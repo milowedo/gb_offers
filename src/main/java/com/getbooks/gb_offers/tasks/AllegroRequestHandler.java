@@ -1,6 +1,6 @@
 package com.getbooks.gb_offers.tasks;
 
-import com.getbooks.gb_offers.models.BookRequest;
+import com.getbooks.gb_offers.models.BookEntityReceived;
 import com.getbooks.gb_offers.models.BookResult;
 import com.getbooks.gb_offers.models.Seller;
 import com.google.gson.JsonArray;
@@ -31,8 +31,8 @@ public final class AllegroRequestHandler {
     private static final JsonParser parser = new JsonParser();
     public static String authorizationString;
 
-    public static CompletableFuture<Void> addOffersForBook(BookRequest bookRequest, ConcurrentHashMap<Seller, HashSet<BookResult>> calculatedResult) {
-        return callApi(bookRequest).thenCompose(AllegroRequestHandler::parseResponseToOffers)
+    public static CompletableFuture<Void> addOffersForBook(BookEntityReceived bookEntityReceived, ConcurrentHashMap<Seller, HashSet<BookResult>> calculatedResult) {
+        return callApi(bookEntityReceived).thenCompose(AllegroRequestHandler::parseResponseToOffers)
                 .thenApplyAsync(books ->
                         IntStream.range(0, books.size() - 1)
                                 .mapToObj(books::get)
@@ -45,6 +45,8 @@ public final class AllegroRequestHandler {
                                 AllegroRequestHandler.logger.info("Could not create book or seller from json offer object");
                                 return;
                             }
+                            newBook.setBookTitle(bookEntityReceived.title);
+                            newBook.setWriter(bookEntityReceived.writer);
                             calculatedResult.putIfAbsent(seller, new HashSet<>());
                             calculatedResult.get(seller).add(newBook);
                         }));
@@ -55,6 +57,11 @@ public final class AllegroRequestHandler {
         try {
             seller = new Seller();
             seller.setSeller_id(singleBook.get("seller").getAsJsonObject().get("id").toString());
+
+            var price = singleBook.get("delivery")
+                    .getAsJsonObject().get("lowestPrice")
+                    .getAsJsonObject().get("amount").toString();
+            seller.setLowestPriceDelivery(price);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -65,14 +72,11 @@ public final class AllegroRequestHandler {
         try {
             var bookResult = new BookResult();
             bookResult.setAuction_id(singleBook.get("id").toString());
-            bookResult.setName(singleBook.get("name").toString());
+            bookResult.setAuctionName(singleBook.get("name").toString());
             bookResult.setPriceAmount(singleBook.get("sellingMode")
                     .getAsJsonObject().get("price")
                     .getAsJsonObject().get("amount").toString());
             bookResult.setImageUrl(singleBook.get("images").toString());
-            bookResult.setLowestPriceDelivery(singleBook.get("delivery")
-                    .getAsJsonObject().get("lowestPrice")
-                    .getAsJsonObject().get("amount").toString());
             return bookResult;
         } catch (Exception e) {
             e.printStackTrace();
@@ -89,13 +93,13 @@ public final class AllegroRequestHandler {
                 .getAsJsonArray());
     }
 
-    private static CompletableFuture<HttpResponse<String>> callApi(BookRequest bookRequest) {
+    private static CompletableFuture<HttpResponse<String>> callApi(BookEntityReceived bookEntityReceived) {
 
         URI uri = UriComponentsBuilder
                 .fromUri(URI.create("https://api.allegro.pl/offers/listing"))
                 .queryParam("category.id", BOOKS_CATEGORY_ID)
-                .queryParam("phrase", bookRequest.writer + " " + bookRequest.title)
-                .queryParam("price.to", bookRequest.price)
+                .queryParam("phrase", bookEntityReceived.writer + " " + bookEntityReceived.title)
+                .queryParam("price.to", bookEntityReceived.price)
                 .queryParam("fallback", SHOULD_FALLBACK)
                 .queryParam("sellingMode.format", SELLING_MODE)
                 .build().toUri();

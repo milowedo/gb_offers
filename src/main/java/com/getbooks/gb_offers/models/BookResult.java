@@ -16,9 +16,11 @@ public class BookResult {
     @JsonRawValue
     private String imageUrl;
     @JsonRawValue
-    private String name;
+    private String auctionName;
+    @JsonRawValue
+    private String writer;
+    @JsonRawValue
+    private String bookTitle;
     @JsonRawValue
     private String priceAmount;
-    @JsonRawValue
-    private String lowestPriceDelivery;
 }

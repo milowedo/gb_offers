@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,9 +40,10 @@ public class OffersController {
                             .map(book -> AllegroRequestHandler.addOffersForBook(book, calculatedResult))
                             .toArray(CompletableFuture[]::new)).get();
         } catch (InterruptedException | ExecutionException e) {
-            logger.error("Something went wrong while analyzing tasks" + e.getMessage());
+            logger.error("Something went wrong while analyzing tasks " + Arrays.toString(e.getStackTrace()));
         }
 
+        logger.info("Returning calculated offers");
         return ResponseEntity.ok().body(calculatedResult);
     }
 }

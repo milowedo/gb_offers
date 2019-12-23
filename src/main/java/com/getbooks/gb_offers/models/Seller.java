@@ -1,5 +1,6 @@
 package com.getbooks.gb_offers.models;
 
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import lombok.*;
 
 import java.util.Objects;
@@ -9,7 +10,11 @@ import java.util.Objects;
 @AllArgsConstructor
 @NoArgsConstructor
 public class Seller {
+    @JsonRawValue
     public String seller_id;
+
+    @JsonRawValue
+    private String lowestPriceDelivery;
 
     @Override
     public boolean equals(Object o) {
