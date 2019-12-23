@@ -2,19 +2,26 @@ package com.getbooks.gb_offers.models;
 
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import lombok.*;
+import org.springframework.boot.jackson.JsonComponent;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 @Setter
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Seller {
+@JsonComponent
+public class Seller implements Serializable {
+
     @JsonRawValue
     public String seller_id;
 
     @JsonRawValue
     private String lowestPriceDelivery;
+
+    @JsonRawValue
+    private Double total;
 
     @Override
     public boolean equals(Object o) {
@@ -27,11 +34,5 @@ public class Seller {
     @Override
     public int hashCode() {
         return Objects.hash(seller_id);
-    }
-
-
-    @Override
-    public String toString() {
-        return seller_id;
     }
 }

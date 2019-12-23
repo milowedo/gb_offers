@@ -73,9 +73,11 @@ public final class AllegroRequestHandler {
             var bookResult = new BookResult();
             bookResult.setAuction_id(singleBook.get("id").toString());
             bookResult.setAuctionName(singleBook.get("name").toString());
-            bookResult.setPriceAmount(singleBook.get("sellingMode")
-                    .getAsJsonObject().get("price")
-                    .getAsJsonObject().get("amount").toString());
+            bookResult.setPriceAmount(
+                    singleBook.get("sellingMode")
+                            .getAsJsonObject().get("price")
+                            .getAsJsonObject().get("amount").getAsDouble()
+            );
             bookResult.setImageUrl(singleBook.get("images").toString());
             return bookResult;
         } catch (Exception e) {

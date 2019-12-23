@@ -6,21 +6,26 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.io.Serializable;
+
 @Setter
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class BookResult {
+public class BookResult implements Serializable {
     @JsonRawValue
     private String auction_id;
+
     @JsonRawValue
     private String imageUrl;
+
     @JsonRawValue
     private String auctionName;
-    @JsonRawValue
+
     private String writer;
-    @JsonRawValue
+
     private String bookTitle;
+
     @JsonRawValue
-    private String priceAmount;
+    private Double priceAmount;
 }

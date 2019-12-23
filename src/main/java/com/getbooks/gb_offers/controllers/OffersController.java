@@ -3,6 +3,7 @@ package com.getbooks.gb_offers.controllers;
 import com.getbooks.gb_offers.models.OffersEndpointRequestBody;
 import com.getbooks.gb_offers.models.BookResult;
 import com.getbooks.gb_offers.models.Seller;
+import com.getbooks.gb_offers.models.SellerWithOffersContainer;
 import com.getbooks.gb_offers.tasks.AllegroRequestHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,9 +14,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 @RestController
 public class OffersController {
@@ -43,7 +47,18 @@ public class OffersController {
             logger.error("Something went wrong while analyzing tasks " + Arrays.toString(e.getStackTrace()));
         }
 
-        logger.info("Returning calculated offers");
-        return ResponseEntity.ok().body(calculatedResult);
+        return ResponseEntity.ok().body(calculatedResult
+                .entrySet().parallelStream()
+                .peek(addTotalPrice())
+                .map(entry -> new SellerWithOffersContainer(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList())
+        );
+    }
+
+    private Consumer<Map.Entry<Seller, HashSet<BookResult>>> addTotalPrice() {
+        return entry -> entry.getKey().setTotal(
+                entry.getValue().parallelStream()
+                        .map(BookResult::getPriceAmount).reduce(0.0, Double::sum)
+        );
     }
 }
