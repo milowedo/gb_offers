@@ -16,6 +16,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -48,8 +49,22 @@ public final class AllegroRequestHandler {
                             newBook.setBookTitle(bookEntityReceived.title);
                             newBook.setWriter(bookEntityReceived.writer);
                             calculatedResult.putIfAbsent(seller, new HashSet<>());
+                            removeOldBookIfMoreExpensive(calculatedResult, seller, newBook);
                             calculatedResult.get(seller).add(newBook);
                         }));
+    }
+
+    private static void removeOldBookIfMoreExpensive(ConcurrentHashMap<Seller, HashSet<BookResult>> calculatedResult,
+                                                     Seller seller, BookResult newBook) {
+        var sellersBooks = calculatedResult.get(seller);
+        Optional<BookResult> bookTypeAlreadyPresent = sellersBooks.parallelStream()
+                .filter(offer -> offer.getBookTitle().equals(newBook.getBookTitle()) && offer.getWriter().equals(newBook.getWriter()))
+                .findFirst();
+        bookTypeAlreadyPresent.ifPresent(book -> {
+            if (book.getPriceAmount() > newBook.getPriceAmount()) {
+                sellersBooks.remove(book);
+            }
+        });
     }
 
     private static Seller extractSellerFromJson(JsonObject singleBook) {
