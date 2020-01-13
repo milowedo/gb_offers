@@ -34,6 +34,8 @@ public class OffersController {
             return ResponseEntity.status(400).body("Request body should contain fields: authorization and books");
         }
 
+        logger.error("Received books " + receivedBooks.size() + " with id of: " +  receivedAth);
+
         AllegroRequestHandler.authorizationString = receivedAth;
         var calculatedResult = new ConcurrentHashMap<Seller, HashSet<BookResult>>();
         try {
