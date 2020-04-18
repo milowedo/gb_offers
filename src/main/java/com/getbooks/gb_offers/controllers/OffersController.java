@@ -34,7 +34,7 @@ public class OffersController {
             return ResponseEntity.status(400).body("Request body should contain fields: authorization and books");
         }
 
-        logger.error("Received books " + receivedBooks.size() + " with id of: " +  receivedAth);
+        logger.error("Received books " + receivedBooks.size() + " with id of: " + receivedAth);
 
         AllegroRequestHandler.authorizationString = receivedAth;
         var calculatedResult = new ConcurrentHashMap<Seller, HashSet<BookResult>>();
@@ -53,10 +53,18 @@ public class OffersController {
                 .entrySet().parallelStream()
                 .peek(addTotalPrice())
                 .map(entry -> new SellerWithOffersContainer(entry.getKey(), entry.getValue()))
-                .sorted((o1, o2) -> o2.getBookResult().size() - o1.getBookResult().size())
+                .sorted(sellersCompareByCollectionSize().thenComparing(sellersCompareByCollectionTotalPrice()))
                 .collect(Collectors.toList());
 
         return ResponseEntity.ok().body(zippedAndSorted);
+    }
+
+    private Comparator<SellerWithOffersContainer> sellersCompareByCollectionTotalPrice() {
+        return (o1, o2) -> (int) (o1.getSeller().getTotal() - o2.getSeller().getTotal());
+    }
+
+    private Comparator<SellerWithOffersContainer> sellersCompareByCollectionSize() {
+        return (o1, o2) -> o2.getBookResult().size() - o1.getBookResult().size();
     }
 
     private void combDuplicatesOut(ConcurrentHashMap<Seller, HashSet<BookResult>> calculatedResult) {
