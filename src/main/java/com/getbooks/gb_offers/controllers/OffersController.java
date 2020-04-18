@@ -60,7 +60,7 @@ public class OffersController {
     }
 
     private Comparator<SellerWithOffersContainer> sellersCompareByCollectionTotalPrice() {
-        return (o1, o2) -> (int) (o1.getSeller().getTotal() - o2.getSeller().getTotal());
+        return Comparator.comparingDouble(o -> o.getSeller().getTotal());
     }
 
     private Comparator<SellerWithOffersContainer> sellersCompareByCollectionSize() {
