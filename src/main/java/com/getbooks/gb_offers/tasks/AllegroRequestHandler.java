@@ -32,7 +32,8 @@ public final class AllegroRequestHandler {
     private static final JsonParser parser = new JsonParser();
     public static String authorizationString;
 
-    public static CompletableFuture<Void> addOffersForBook(BookEntityReceived bookEntityReceived, ConcurrentHashMap<Seller, HashSet<BookResult>> calculatedResult) {
+    public static CompletableFuture<Void> addOffersForBook(BookEntityReceived bookEntityReceived,
+                                                           ConcurrentHashMap<Seller, HashSet<BookResult>> calculatedResult) {
         return callApi(bookEntityReceived).thenCompose(AllegroRequestHandler::parseResponseToOffers)
                 .thenApplyAsync(books ->
                         IntStream.range(0, books.size() - 1)
@@ -53,7 +54,7 @@ public final class AllegroRequestHandler {
                         }));
     }
 
-        private static Seller extractSellerFromJson(JsonObject singleBook) {
+    private static Seller extractSellerFromJson(JsonObject singleBook) {
         Seller seller = null;
         try {
             seller = new Seller();

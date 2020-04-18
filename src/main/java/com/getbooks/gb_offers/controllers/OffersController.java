@@ -3,7 +3,7 @@ package com.getbooks.gb_offers.controllers;
 import com.getbooks.gb_offers.models.OffersEndpointRequestBody;
 import com.getbooks.gb_offers.models.BookResult;
 import com.getbooks.gb_offers.models.Seller;
-import com.getbooks.gb_offers.models.SellerWithOffersContainer;
+import com.getbooks.gb_offers.models.Shop;
 import com.getbooks.gb_offers.tasks.AllegroRequestHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +16,6 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @RestController
@@ -34,7 +33,7 @@ public class OffersController {
             return ResponseEntity.status(400).body("Request body should contain fields: authorization and books");
         }
 
-        logger.error("Received books " + receivedBooks.size() + " with id of: " + receivedAth);
+        logger.error("Received " + receivedBooks.size() + " books with ath of: \n" + receivedAth);
 
         AllegroRequestHandler.authorizationString = receivedAth;
         var calculatedResult = new ConcurrentHashMap<Seller, HashSet<BookResult>>();
@@ -46,48 +45,52 @@ public class OffersController {
         } catch (InterruptedException | ExecutionException e) {
             logger.error("Something went wrong while analyzing tasks " + Arrays.toString(e.getStackTrace()));
         }
+        var listOfShops = mapSellersAndBookSetsToShops(calculatedResult);
+        separateDuplicatedBooks(listOfShops);
+        calculateAndPutTotalPrice(listOfShops);
+        listOfShops.sort(sellersCompareByCollectionSize().thenComparing(sellersCompareByCollectionTotalPrice()));
 
-        combDuplicatesOut(calculatedResult);
-
-        List<SellerWithOffersContainer> zippedAndSorted = calculatedResult
-                .entrySet().parallelStream()
-                .peek(addTotalPrice())
-                .map(entry -> new SellerWithOffersContainer(entry.getKey(), entry.getValue()))
-                .sorted(sellersCompareByCollectionSize().thenComparing(sellersCompareByCollectionTotalPrice()))
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok().body(zippedAndSorted);
+        return ResponseEntity.ok().body(listOfShops);
     }
 
-    private Comparator<SellerWithOffersContainer> sellersCompareByCollectionTotalPrice() {
+    private void calculateAndPutTotalPrice(List<Shop> listOfShops) {
+        listOfShops
+                .parallelStream()
+                .forEach(shop -> shop.getSeller().setTotal(shop.getBookResult()
+                        .parallelStream()
+                        .map(BookResult::getPriceAmount)
+                        .reduce(0.0, Double::sum)));
+    }
+
+    private List<Shop> mapSellersAndBookSetsToShops(ConcurrentHashMap<Seller, HashSet<BookResult>> calculatedResult) {
+        return calculatedResult.entrySet().parallelStream()
+                .map(entry -> new Shop(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList());
+    }
+
+    private Comparator<Shop> sellersCompareByCollectionTotalPrice() {
         return Comparator.comparingDouble(o -> o.getSeller().getTotal());
     }
 
-    private Comparator<SellerWithOffersContainer> sellersCompareByCollectionSize() {
+    private Comparator<Shop> sellersCompareByCollectionSize() {
         return (o1, o2) -> o2.getBookResult().size() - o1.getBookResult().size();
     }
 
-    private void combDuplicatesOut(ConcurrentHashMap<Seller, HashSet<BookResult>> calculatedResult) {
-        calculatedResult.values().parallelStream()
-                .forEach(bookSet -> {
-                    bookSet.stream()
-                            .collect(Collectors.groupingBy(book -> book.getBookTitle().concat(book.getWriter())))
-                            .values().stream()
-                            .filter(anyList -> anyList.size() > 1)
-                            .forEach(listWithDuplicates -> { // these lists contain duplicates
-                                        var minimumPriceBook = listWithDuplicates.stream()
-                                                .min(Comparator.comparingDouble(BookResult::getPriceAmount)).get();
-                                        listWithDuplicates.remove(minimumPriceBook);
-                                        bookSet.removeAll(listWithDuplicates);
-                                    }
-                            );
-                });
+    private void separateDuplicatedBooks(List<Shop> shopList) {
+        shopList.parallelStream()
+                .forEach(shop -> shop.getBookResult().stream()
+                        .collect(Collectors.groupingBy(book -> book.getBookTitle().concat(book.getWriter())))
+                        .values().stream()
+                        .filter(anyList -> anyList.size() > 1)
+                        .forEach(listWithDuplicates -> {
+                            listWithDuplicates.remove(findBookWithLowestPrice(listWithDuplicates));
+                            shop.getBookResult().removeAll(listWithDuplicates);
+                            shop.setBookDuplicates(listWithDuplicates);
+                        })
+                );
     }
 
-    private Consumer<Map.Entry<Seller, HashSet<BookResult>>> addTotalPrice() {
-        return entry -> entry.getKey().setTotal(
-                entry.getValue().parallelStream()
-                        .map(BookResult::getPriceAmount).reduce(0.0, Double::sum)
-        );
+    private BookResult findBookWithLowestPrice(List<BookResult> listWithDuplicates) {
+        return listWithDuplicates.stream().min(Comparator.comparingDouble(BookResult::getPriceAmount)).get();
     }
 }
